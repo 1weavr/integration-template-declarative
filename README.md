@@ -1,18 +1,26 @@
 # Declarative integration template
 
-Turns a capture into an issue in your tool, with no code: every request it makes and how each answer is read live in
-`manifest.json`. Start here for a tool with a plain REST API, such as an issue tracker.
+Files a capture as an issue in your tool, and marks the capture fixed when your tool says the issue is done. There is
+no code: each call below is answered by a request template and a response mapping in `manifest.json`.
 
-What it does in 1weavr, and which part of the manifest does it:
+## The calls it answers
 
-| Where | What people see | In `manifest.json` |
-|---|---|---|
-| Set-up | Connect with a site name, an account email and an API token; the token is checked by asking who it belongs to | `connection` (`token-host`), `actions.whoAmI` |
-| Send to, in the app and the extension | A form: project, title, type, assignee and labels, each list filled from your tool | `contributes["item.actions"]`, `lookups.projects`, `issueTypes`, `people`, `labels` |
-| Sending | Creates the issue; on a retry, finds the issue an earlier try made instead of making a second | `actions.createIssue`, `actions.findByMarker` |
-| Sent to, and list rows | The issue's key and link on the capture, and its status on the list | `contributes["item.sent"]`, `contributes["list.status"]` |
-| Project default | Each 1weavr project can send to one project in your tool by default | `contributes["project.destination"]` |
-| Webhook from your tool | When the issue is done, the capture is marked fixed (a switch in set-up) and a line is added to its activity | `events.in`, `actions.onToolEvent`, `setup.close_fixes` |
+| Call | Answered by | Input you map from | Output you must produce | Limit |
+|---|---|---|---|---|
+| `connection.verify` | `connection.verify` → `actions.whoAmI` | nothing; the connection's fields (`site`, `email`, `api_token`) fill the request | `{ account }`, shown as "Connected as …" | 10 s, no retry |
+| `lookup` | `lookups.projects`, `issueTypes`, `people`, `labels` | `{ lookup, query, cursor, target?, values }` | `{ items: [{ value, label }], next }` | 5 s, no retry |
+| `send.file` | `contributes["item.actions"].file` → `actions.createIssue` | `{ target, report, markdown, outcome, values, marker }`: `values` holds the form (`title`, `type`, `assignee`, `labels`) | `{ outcome: "issue", target, ref: { scheme: "key", key }, url }` | 120 s, never retried |
+| `send.find` | `contributes["item.actions"].find` → `actions.findByMarker` | `{ target, marker, outcome, since }` | `{ found: true, outcome, target, ref, url }` or `{ found: false }` | 120 s, no retry |
+| `inbound.handle` | `events.in.handle` → `actions.onToolEvent` | `{ headers, body }`, after the `X-Tool-Signature` HMAC check | `{}`, with effects `filing.state` (the issue's state, shown on the capture) and `item.fixed` (when the issue is done and `setup.close_fixes` is on) | 10 s, 3 retries |
+
+`send.file` is never retried, because a second try could file twice. When its outcome is unknown, 1weavr calls
+`send.find` with the same `marker` to learn whether the first try landed. The marker is the last line of `markdown`
+(`Ref <marker>`), so `createIssue` sends `markdown` as the issue body and `findByMarker` searches for it.
+
+Every call carries `protocol`, `call`, a unique `delivery` id, the `integration`, the `installation` and its
+`input`. The answer repeats `call` and `delivery` and is either `{ ok: true, output, effects? }` or
+`{ ok: false, error: { code, message } }`, where `code` is `refused`, `failed`, `unauthenticated` or `rate_limited` and
+`message` is shown to people as written. An answer that does not match its call's shape is refused and logged.
 
 ## What is in it
 
