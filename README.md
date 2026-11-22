@@ -6,17 +6,6 @@ A 1weavr integration with **no code**: the requests it makes and how their answe
 This one turns a capture into an issue in your tool, lets people pick the project, and can mark the capture fixed
 when the issue is done.
 
-## Status
-
-This template is ahead of the platform. Read this before you build on it:
-
-- **The declarative runtime is not available yet.** Today 1weavr runs only its built-in integrations. If you upload this
-  integration now, every call answers "The declarative runtime is not available on this server yet". Its manifest and test
-  cases are checked, but nothing runs.
-- **There is no command-line tool yet** to run the test cases on your machine. They will run in 1weavr's developer
-  console once the runtime is there.
-- **Uploading packages is not built yet** either. Watch this repository: this README changes as each of these ships.
-
 ## What is in it
 
 ```
