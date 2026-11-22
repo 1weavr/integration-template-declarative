@@ -1,10 +1,18 @@
 # Declarative integration template
 
-A 1weavr integration with **no code**: the requests it makes and how their answers are read all live in
-`manifest.json`. Pick it for a tool with a plain REST API, such as an issue tracker.
+Turns a capture into an issue in your tool, with no code: every request it makes and how each answer is read live in
+`manifest.json`. Start here for a tool with a plain REST API, such as an issue tracker.
 
-This one turns a capture into an issue in your tool, lets people pick the project, and can mark the capture fixed
-when the issue is done.
+What it does in 1weavr, and which part of the manifest does it:
+
+| Where | What people see | In `manifest.json` |
+|---|---|---|
+| Set-up | Connect with a site name, an account email and an API token; the token is checked by asking who it belongs to | `connection` (`token-host`), `actions.whoAmI` |
+| Send to, in the app and the extension | A form: project, title, type, assignee and labels, each list filled from your tool | `contributes["item.actions"]`, `lookups.projects`, `issueTypes`, `people`, `labels` |
+| Sending | Creates the issue; on a retry, finds the issue an earlier try made instead of making a second | `actions.createIssue`, `actions.findByMarker` |
+| Sent to, and list rows | The issue's key and link on the capture, and its status on the list | `contributes["item.sent"]`, `contributes["list.status"]` |
+| Project default | Each 1weavr project can send to one project in your tool by default | `contributes["project.destination"]` |
+| Webhook from your tool | When the issue is done, the capture is marked fixed (a switch in set-up) and a line is added to its activity | `events.in`, `actions.onToolEvent`, `setup.close_fixes` |
 
 ## What is in it
 
