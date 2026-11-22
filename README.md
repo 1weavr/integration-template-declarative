@@ -22,6 +22,34 @@ Every call carries `protocol`, `call`, a unique `delivery` id, the `integration`
 `{ ok: false, error: { code, message } }`, where `code` is `refused`, `failed`, `unauthenticated` or `rate_limited` and
 `message` is shown to people as written. An answer that does not match its call's shape is refused and logged.
 
+## Security
+
+### What 1weavr enforces
+
+- **Hosts.** A request reaches only a host listed in `hosts`, and only for the uses listed there (`fetch`, `link`,
+  `auth`). Anything else is blocked before it leaves, and the block is recorded in the installation's Log.
+- **Secrets.** A secret enters a request only through a `${secret.<name>}` hole that 1weavr fills, and only for a host
+  that names that secret under `secrets`; in a body, only on an `auth` host. The manifest names secrets; it never holds them.
+- **Masking.** Secret values are masked in the Log and the developer console, in headers and in bodies.
+- **Consent.** Admins approve the permissions and hosts the manifest asks for when they install. A version that adds a
+  permission, a host, a secret, an event or an effect is a major version, and admins approve it before it runs.
+- **Publisher secrets** (`${secret.publisher.<name>}`) are sealed in your integration's Environments, Test and Live
+  apart, and are never shown again once saved.
+
+### What you are responsible for
+
+- **Ask for the least.** List only the hosts, uses and permissions the requests need. Keep hosts exact
+  (`{site}.your-tool.example`), never a broad wildcard.
+- **Keep the webhook secret.** `events.in.verify` checks every delivery from your tool against `webhook_secret` with
+  HMAC-SHA256 over the raw body. Each installation sets its own; never ship one in the repository.
+- **No real secrets in the repository.** Test cases use stand-in values (`fixture-token`), never a real token.
+- **Words people read.** `error.message` is shown to people as written: never put a token, a URL with a key, or an
+  internal detail in it.
+- **One send, one issue.** `send.file` is never retried; keep the marker in what you create so `send.find` can find an
+  earlier try instead of filing twice.
+
+Report a vulnerability privately to security@1weavr.com (see `SECURITY.md`).
+
 ## What is in it
 
 ```
@@ -43,7 +71,7 @@ The full guide, with the manifest, test cases and publishing: https://1weavr.com
 
 ## Questions
 
-Email support@1weavr.com, or open an issue on this repository.
+Email support@1weavr.com, or open an issue on this repository. Security reports go to security@1weavr.com.
 
 ## Licence
 
