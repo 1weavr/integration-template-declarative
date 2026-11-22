@@ -1,0 +1,325 @@
+{
+  "protocol": 2,
+  "id": "your-tracker",
+  "name": "Your tracker",
+  "version": "0.1.0",
+  "summary": "Turn a capture into an issue in your tool and see its status here.",
+  "description": "Creates an issue in the project you choose, links the pictures, and marks the capture fixed when the issue is done.",
+  "icon": "icon.svg",
+  "categories": [
+    "tracking"
+  ],
+  "links": {
+    "support": "mailto:help@your-tool.example",
+    "privacy": "https://your-tool.example/privacy"
+  },
+  "runtime": {
+    "kind": "declarative"
+  },
+  "hosts": [
+    {
+      "host": "{site}.your-tool.example",
+      "use": [
+        "fetch",
+        "link"
+      ],
+      "secrets": [
+        "basic",
+        "publisher.partner_key"
+      ],
+      "reason": "Your Your tool site: creating and reading issues."
+    }
+  ],
+  "publisher": {
+    "values": [],
+    "secrets": [
+      "partner_key"
+    ]
+  },
+  "connection": {
+    "kind": "token-host",
+    "owner": "workspace",
+    "verify": "whoAmI",
+    "fields": [
+      {
+        "key": "site",
+        "label": "Site name",
+        "kind": "text",
+        "required": true,
+        "format": "host-label",
+        "help": "The first part of your Your tool address."
+      },
+      {
+        "key": "email",
+        "label": "Account email",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "key": "api_token",
+        "label": "API token",
+        "kind": "text",
+        "secret": true,
+        "required": true
+      }
+    ],
+    "derived": {
+      "basic": {
+        "kind": "basic",
+        "username": "email",
+        "password": "api_token"
+      }
+    }
+  },
+  "setup": {
+    "fields": [
+      {
+        "key": "close_fixes",
+        "label": "Mark the capture fixed when the issue is done",
+        "kind": "switch"
+      }
+    ]
+  },
+  "contributes": {
+    "item.actions": {
+      "outcomes": [
+        {
+          "id": "issue",
+          "action": "create",
+          "object": "issue",
+          "ref": {
+            "scheme": "key"
+          },
+          "needs": "target"
+        }
+      ],
+      "targetKind": "project",
+      "targets": "projects",
+      "form": {
+        "fields": [
+          {
+            "key": "title",
+            "label": "Title",
+            "kind": "text",
+            "required": true,
+            "from": "title"
+          },
+          {
+            "key": "type",
+            "label": "Type",
+            "kind": "choice",
+            "required": true,
+            "options": {
+              "lookup": "issueTypes",
+              "dependsOn": [
+                "target"
+              ]
+            }
+          },
+          {
+            "key": "assignee",
+            "label": "Assignee",
+            "kind": "choice",
+            "options": {
+              "lookup": "people",
+              "dependsOn": [
+                "target"
+              ]
+            }
+          },
+          {
+            "key": "labels",
+            "label": "Labels",
+            "kind": "choice",
+            "multiple": true,
+            "from": "labels",
+            "options": {
+              "lookup": "labels",
+              "dependsOn": [
+                "target"
+              ]
+            }
+          }
+        ]
+      },
+      "file": "createIssue",
+      "find": "findByMarker"
+    },
+    "extension.send": "item.actions",
+    "item.sent": {},
+    "list.status": {},
+    "project.destination": {
+      "targets": "projects"
+    },
+    "item.activity": {}
+  },
+  "lookups": {
+    "projects": {
+      "request": {
+        "method": "GET",
+        "url": "https://${connection.site}.your-tool.example/api/3/projects",
+        "query": {
+          "q": "${query}",
+          "after": "${cursor}"
+        },
+        "headers": {
+          "Authorization": "Basic ${secret.basic}"
+        }
+      },
+      "items": "body.values",
+      "value": "key",
+      "label": "name",
+      "next": "body.next"
+    },
+    "issueTypes": {
+      "request": {
+        "method": "GET",
+        "url": "https://${connection.site}.your-tool.example/api/3/projects/${target.id}/types",
+        "headers": {
+          "Authorization": "Basic ${secret.basic}"
+        }
+      },
+      "items": "body",
+      "value": "id",
+      "label": "name"
+    },
+    "people": {
+      "request": {
+        "method": "GET",
+        "url": "https://${connection.site}.your-tool.example/api/3/projects/${target.id}/people",
+        "query": {
+          "q": "${query}"
+        },
+        "headers": {
+          "Authorization": "Basic ${secret.basic}"
+        }
+      },
+      "items": "body",
+      "value": "id",
+      "label": "displayName"
+    },
+    "labels": {
+      "request": {
+        "method": "GET",
+        "url": "https://${connection.site}.your-tool.example/api/3/labels",
+        "query": {
+          "q": "${query}"
+        },
+        "headers": {
+          "Authorization": "Basic ${secret.basic}"
+        }
+      },
+      "items": "body.values",
+      "value": "@",
+      "label": "@"
+    }
+  },
+  "actions": {
+    "whoAmI": {
+      "request": {
+        "method": "GET",
+        "url": "https://${connection.site}.your-tool.example/api/3/me",
+        "headers": {
+          "Authorization": "Basic ${secret.basic}"
+        }
+      },
+      "result": {
+        "account": "body.email"
+      }
+    },
+    "createIssue": {
+      "request": {
+        "method": "POST",
+        "url": "https://${connection.site}.your-tool.example/api/3/issues",
+        "headers": {
+          "Authorization": "Basic ${secret.basic}",
+          "Content-Type": "application/json",
+          "X-Partner-Key": "${secret.publisher.partner_key}"
+        },
+        "body": {
+          "project": "${target.id}",
+          "type": "${values.type}",
+          "summary": "${values.title}",
+          "body": "${markdown}",
+          "assignee": "${values.assignee}",
+          "labels": "${values.labels}"
+        }
+      },
+      "result": {
+        "outcome": "'issue'",
+        "target": "input.target.id",
+        "ref": {
+          "scheme": "'key'",
+          "key": "body.key"
+        },
+        "url": "body.url"
+      }
+    },
+    "findByMarker": {
+      "request": {
+        "method": "GET",
+        "url": "https://${connection.site}.your-tool.example/api/3/search",
+        "query": {
+          "text": "${marker}",
+          "project": "${target.id}",
+          "order": "created"
+        },
+        "headers": {
+          "Authorization": "Basic ${secret.basic}"
+        }
+      },
+      "result": {
+        "found": "body.issues[0] != null",
+        "outcome": "'issue'",
+        "target": "input.target.id",
+        "ref": {
+          "scheme": "'key'",
+          "key": "body.issues[0].key"
+        },
+        "url": "body.issues[0].url"
+      }
+    },
+    "onToolEvent": {
+      "result": {
+        "effects": "[{ type: 'filing.state', object: 'issue', ref: { scheme: 'key', key: body.issue.key }, target: body.issue.project, state: body.issue.done && 'done' || 'open', cause: body.issue.done && 'closed' || null }, body.issue.done && options.close_fixes && { type: 'item.fixed', object: 'issue', ref: { scheme: 'key', key: body.issue.key }, target: body.issue.project, cause: 'closed' }][?@]"
+      }
+    }
+  },
+  "events": {
+    "out": [],
+    "in": {
+      "verify": {
+        "scheme": "hmac-sha256",
+        "secret": "webhook_secret",
+        "signature": {
+          "header": "X-Tool-Signature",
+          "prefix": "sha256=",
+          "encoding": "hex"
+        },
+        "base": "${rawBody}",
+        "timestamp": null,
+        "deliveryId": {
+          "header": "X-Tool-Delivery"
+        }
+      },
+      "handle": "onToolEvent"
+    }
+  },
+  "schedule": [],
+  "storage": {
+    "keys": []
+  },
+  "effects": [
+    "filing.state",
+    "item.fixed",
+    "activity.add"
+  ],
+  "permissions": [
+    "activity.write",
+    "items.send",
+    "projects.read"
+  ],
+  "locales": {
+    "default": "en"
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "name": "Priority not found",
+  "call": "send.file",
+  "input": {
+    "target": {
+      "id": "ACME",
+      "label": "ACME"
+    },
+    "report": {
+      "items": [
+        {
+          "itemId": "c_128",
+          "kind": "capture",
+          "title": "Sale badge overlaps the price",
+          "note": "On narrow screens the red badge sits on top of the price.",
+          "attachments": [
+            {
+              "role": "crop",
+              "url": "https://files.example/a/c_128/crop.png",
+              "contentType": "image/png",
+              "bytes": 48210
+            }
+          ],
+          "capture": {
+            "tool": "rect",
+            "page": {
+              "url": "https://stride.shop/sale",
+              "title": "Sale"
+            }
+          }
+        }
+      ],
+      "project": {
+        "id": "p_store",
+        "name": "Storefront"
+      },
+      "title": "Sale badge overlaps the price",
+      "description": "On narrow screens the red badge sits on top of the price.",
+      "labels": [
+        {
+          "name": "ui",
+          "color": "coral"
+        }
+      ]
+    },
+    "markdown": "On narrow screens the red badge sits on top of the price.\n\n![crop](https://files.example/a/c_128/crop.png)\n\nPage: https://stride.shop/sale",
+    "outcome": "issue",
+    "change": null,
+    "values": {
+      "title": "Sale badge overlaps the price",
+      "type": "10001",
+      "priority": "Urgent"
+    },
+    "marker": "f_01"
+  },
+  "secrets": {
+    "basic": "fixture-basic"
+  },
+  "http": [
+    {
+      "match": {
+        "method": "POST",
+        "url": "https://acme.your-tool.example/api/3/issues"
+      },
+      "respond": {
+        "status": 400,
+        "body": {
+          "errors": {
+            "priority": "Priority \"Urgent\" not found"
+          }
+        }
+      }
+    }
+  ],
+  "error": {
+    "code": "refused",
+    "message": "The tool refused the issue: priority \"Urgent\" not found."
+  }
+}

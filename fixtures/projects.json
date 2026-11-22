@@ -1,0 +1,58 @@
+{
+  "name": "Project lookup",
+  "call": "lookup",
+  "input": {
+    "lookup": "projects",
+    "query": "",
+    "cursor": null,
+    "values": {}
+  },
+  "secrets": {
+    "basic": "fixture-basic"
+  },
+  "http": [
+    {
+      "match": {
+        "method": "GET",
+        "url": "https://acme.your-tool.example/api/3/projects"
+      },
+      "respond": {
+        "status": 200,
+        "body": {
+          "values": [
+            {
+              "key": "ACME",
+              "name": "Acme storefront"
+            },
+            {
+              "key": "OPS",
+              "name": "Operations"
+            },
+            {
+              "key": "WEB",
+              "name": "Website"
+            }
+          ],
+          "next": null
+        }
+      }
+    }
+  ],
+  "expect": {
+    "items": [
+      {
+        "value": "ACME",
+        "label": "Acme storefront"
+      },
+      {
+        "value": "OPS",
+        "label": "Operations"
+      },
+      {
+        "value": "WEB",
+        "label": "Website"
+      }
+    ],
+    "next": null
+  }
+}
